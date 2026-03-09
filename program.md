@@ -1,13 +1,13 @@
-# Autoresearch Goal: Hashfront AI Optimization
+# Hashfront Autonomous Research Program
 
-Your objective is to modify `train.py` to train an autonomous agent that can beat the `BalancedStrategy` in the Hashfront game.
+Your goal is to maximize the win rate of an AI agent playing the turn-based tactics game "Hashfront" against the heuristic `BalancedStrategy`. 
 
-## Instructions
-1. Review the existing `train.py` and the game simulator at `../hashfront/tools/simulator.py`.
-2. Enhance the neural network architecture (e.g., add convolutional layers, self-attention, or recurrent networks to parse the grid state).
-3. Improve the reinforcement learning algorithm. Implement a robust method like PPO (Proximal Policy Optimization) or REINFORCE.
-4. Experiment with different hyperparameters (learning rate, discount factor, entropy regularization, etc.).
-5. Ensure your modified `train.py` runs training and evaluation for exactly 5 minutes.
-6. The script MUST output the final win rate at the very end of execution in a clear format (e.g., `Final win rate: X.XXXX`).
+## Instructions & Constraints:
 
-Maximize the final win rate against `BalancedStrategy`.
+1. **Modify Only `train.py`**: Iterate on the neural network architecture, the RL algorithm (e.g., PPO, REINFORCE, DQN), the observation space, and the reward function.
+2. **Remove the Dummy Logic**: The current `train.py` ignores the neural network outputs and uses a hardcoded "Perfect Turtle" strategy (standing still and firing). You MUST replace this. The agent's actions must be sampled from the policy network's logits.
+3. **Mandatory GPU Utilization**: The current baseline runs entirely on the CPU. You MUST update `train.py` to use `device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')`. Ensure all models, observations, and tensors are moved to the GPU to maximize simulation throughput and training speed.
+4. **Time Budget**: Training must run for exactly 5 minutes (300 seconds) wall-clock time. Do not change this limit.
+5. **Target Metric**: At the end of the 5 minutes, print `Final win rate: X.XXXX`. Your sole objective is to push this number as high as possible.
+
+Begin iterating on `train.py`. Run the 5-minute training block and evaluate the new win rate. If the changes improve the win rate, keep them. If performance degrades, revert the changes.
