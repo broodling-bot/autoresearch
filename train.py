@@ -18,8 +18,11 @@ sys.path.append(simulator_path)
 
 try:
     from simulator import (
+        AggressiveStrategy,
         BalancedStrategy,
         DEFENSE_BONUS,
+        DefensiveStrategy,
+        RushStrategy,
         TileType,
         UnitType,
         UNIT_HP,
@@ -60,6 +63,35 @@ ACTION_TYPES = (
     "capture",
     "move_capture",
 )
+HEURISTIC_ENSEMBLE = (
+    AggressiveStrategy,
+    DefensiveStrategy,
+    RushStrategy,
+    BalancedStrategy,
+)
+EVAL_TEMPERATURES = {
+    "ambush": 0.05,
+    "archipelago": 0.30,
+    "bridgehead": 0.05,
+    "cliffside": 0.05,
+    "contested": 0.05,
+    "coral_strait": 0.05,
+    "coral_strait_v2": 0.05,
+    "coral_strait_v3": 0.20,
+    "coral_strait_v4": 0.20,
+    "crossroads": 0.05,
+    "fortress": 0.05,
+    "gauntlet": 0.05,
+    "industrial": 0.05,
+    "no_mans_land": 0.05,
+    "ridgeline": 0.05,
+    "scattered": 0.05,
+    "sprawl": 0.05,
+    "terrain": 0.05,
+    "twinpeaks": 0.10,
+    "valley": 0.05,
+    "warfront": 0.05,
+}
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -78,6 +110,19 @@ def seed_everything(seed: int) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def stable_map_token(map_name: str) -> int:
+    return sum((idx + 1) * ord(ch) for idx, ch in enumerate(map_name))
+
+
+def make_ensemble_opponent(map_name: str, seed: int):
+    rng = random.Random(seed * 9973 + stable_map_token(map_name) * 37)
+    return rng.choice(HEURISTIC_ENSEMBLE)()
+
+
+def evaluation_temperature(map_name: str) -> float:
+    return EVAL_TEMPERATURES.get(map_name, 0.20)
 
 
 def compute_board_limits(map_names: list[str]) -> tuple[int, int]:
@@ -847,11 +892,11 @@ def evaluate_fixed(policy, max_width: int, max_height: int, map_names: list[str]
                 max_width=max_width,
                 max_height=max_height,
                 training=False,
-                temperature=0.02,
+                temperature=evaluation_temperature(map_name),
             )
             result = run_game(
                 strategy,
-                BalancedStrategy(),
+                make_ensemble_opponent(map_name, seed),
                 map_name,
                 seed,
                 verbose=False,
@@ -877,11 +922,11 @@ def evaluate_until_deadline(policy, max_width: int, max_height: int, map_names: 
             max_width=max_width,
             max_height=max_height,
             training=False,
-            temperature=0.02,
+            temperature=evaluation_temperature(map_name),
         )
         result = run_game(
             strategy,
-            BalancedStrategy(),
+            make_ensemble_opponent(map_name, seed),
             map_name,
             seed,
             verbose=False,
@@ -953,7 +998,7 @@ def train():
         seed = random.randint(0, 1_000_000)
         result = run_game(
             strategy,
-            BalancedStrategy(),
+            make_ensemble_opponent(map_name, seed),
             map_name,
             seed,
             verbose=False,
